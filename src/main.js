@@ -4,18 +4,23 @@ import 'onsenui/css/onsen-css-components.css';
 
 import Vue from 'vue'
 import router from './router'
+import App from './App.vue'
 import storeLike from './store.js';
-import './registerServiceWorker'
 import VueOnsen from 'vue-onsenui';
 import CustomToolbar from './partials/CustomToolbar.vue';
 import Vuex from 'vuex';
 import AppNavigator from './AppNavigator.vue';
+import moment from 'moment'
 
 //import App from './App.vue'
 //import firebase from 'firebase'
-
+import JsonExcel from 'vue-json-excel'
+ 
+Vue.component('downloadExcel', JsonExcel)
 Vue.use(VueOnsen);
 Vue.use(Vuex);
+
+
 /*
 const config = {
   apiKey: "AIzaSyA7iDaCYCAt3bswTe3LIlYhL1TDG-2q03A",
@@ -43,6 +48,7 @@ new Vue({
       document.documentElement.setAttribute('onsflag-iphonex-portrait', '');
       document.documentElement.setAttribute('onsflag-iphonex-landscape', '');
     }
+
   },
-  render: h => h(AppNavigator),
+  render: h => h(App), //AppNavigator
 }).$mount('#app')

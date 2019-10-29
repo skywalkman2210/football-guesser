@@ -1,26 +1,37 @@
 <template>
   <v-ons-page>
-    <v-ons-list>
+    <v-ons-list style="text-align:center">
+      
+      <v-ons-icon style="font-size:115px" icon="md-face" class="list-item__icon"></v-ons-icon>
       <v-ons-list-header>User Information</v-ons-list-header>
       <v-ons-list-item :modifier="md ? 'nodivider' : ''">
         <div class="left">
-          <v-ons-icon icon="md-face" class="list-item__icon"></v-ons-icon>
+          <v-ons-icon icon="md-email" class="list-item__icon"></v-ons-icon>
         </div>
         <label class="center">
-          <v-ons-input float maxlength="20"
-            placeholder="Display Name"
-            v-model="displayName"
-            type="number"
+          <v-ons-input float maxlength="70"
+            placeholder="User Email"
+            v-model="user.email"
+            type="text"
+            readonly
           >
           </v-ons-input>
         </label>
       </v-ons-list-item>
 
-      <v-ons-list-item :modifier="md ? 'nodivider' : ''">
+       <v-ons-list-item :modifier="md ? 'nodivider' : ''">
         <div class="left">
-          <v-ons-icon icon="md-save" class="list-item__icon"></v-ons-icon>
+          <v-ons-icon icon="md-account-box" class="list-item__icon"></v-ons-icon>
         </div>
-         <v-ons-button modifier="large" class="button-margin" style="background-color:green">Save</v-ons-button>
+        <label class="center">
+          <v-ons-input float maxlength="70"
+            placeholder="User Display Name"
+            v-model="user.displayName"
+            type="text"
+            readonly
+          >
+          </v-ons-input>
+        </label>
       </v-ons-list-item>
 
       <v-ons-list>
@@ -40,11 +51,12 @@
 <script>
 import swal from 'sweetalert';
 import firebase from 'firebase';
+//import admin from 'firebase-admin';
 
 export default {
   data() {
     return {
-      displayName: '',
+      user: '',
       actions: [
         {
           title: 'Rankings',
@@ -55,14 +67,16 @@ export default {
   },
   methods : {
     logout(index) {
-      firebase.auth().signOut().then(function() {
-        // Sign-out successful.
-      }).catch(function(error) {
-        // An error happened.
+      firebase.auth().signOut().then(() => {
+        window.location.reload();
+      }).catch((error) => {
+        swal('Cannot signout at this time.',error,'error')
       });
-      this.$store.commit('tabbar/set', 2);
     },
   },
+  created() {
+    this.user = firebase.auth().currentUser;
+  }
   
 };
 </script>

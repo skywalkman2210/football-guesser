@@ -36,37 +36,33 @@ const blue = [30, 136, 229];
 export default {
   data () {
     return {
-      shutUp: !this.md,
-      showingTip: false,
       colors: red,
       animationOptions: {},
       topPosition: 0,
       tabs: [
         {
-          label: this.md ? null : 'Home',
+          label: 'Home',
           icon: 'ion-home, material:md-home',
           page: Home,
           theme: red,
-          style: this.md ? { maxWidth: '60px' } : {},
-          top: -105 // Toolbar + Tabbar heights
         },
         {
           label: 'Live',
-          icon: 'ion-play',
+          icon: this.md ? null :'ion-play',
           page: Live,
           theme: red
         },
         {
           label: 'Rankings',
-          icon: 'ion-trophy',
+          icon: this.md ? null : 'ion-trophy',
           page: Rankings,
           theme: red
         },
         {
           label: 'Profile',
-          icon: 'ion-person',
+          icon: this.md ? null : 'ion-person',
           page: Profile,
-          theme: blue
+          theme: red
         }
       ]
     };
@@ -94,7 +90,7 @@ export default {
       }
     },
     title() {
-      return this.md ? 'Fanasty Football' : this.tabs[this.index].title || this.tabs[this.index].label;
+      return this.md ? 'Fantasy Football' : this.tabs[this.index].title || this.tabs[this.index].label;
     },
     swipeTheme() {
       return this.md && {

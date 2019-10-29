@@ -1,22 +1,80 @@
 <template>
-  <div class="login" style="margin-top:5%">
-      <img src="@/assets/ff.png" class="headerImage" style="margin-bottom:10%"/>
-      <div class="row">
-          <div class="col-md-4"></div>
-          <div class="col-md-4">
-              <input type="email" v-model="user.email" class="fadeIn second" placeholder="Email" required>
-              <input type="password" v-model="user.password" class="fadeIn third" placeholder="Password" required>
-              <div class="row" style="margin-top:10px">
-                  <div class="col-sm-6">
-                      <input style="width:85%;text-align:center" type="submit" class="fadeIn fourth" value="Login" @click="checkUser()">
-                  </div>
-                  <div class="col-sm-6">
-                      <a href="#" style="color:white">Forgot your password?</a>
-                  </div>
-              </div>
-          </div>
-          <div class="col-md-4"></div>
+  <div class="login" >
+    <v-ons-page>
+    
+    <!-- Login Modal -->
+    <v-ons-modal :visible="modalVisible" style="overflow-y: auto;overflow-x: auto;">
+      <div  class="login" style="margin-top:5%">
+        <img src="@/assets/jopa.png" class="headerImage" style="margin-bottom:5%;width: 350px;height:350px"/>
+        <div class="row">
+            <div class="col-md-4"></div>
+            <div class="col-md-4">
+                <input type="email" v-model="user.email" class="fadeIn second" placeholder="Email" required>
+                <input type="password" v-model="user.password" class="fadeIn third" placeholder="Password" required>
+                <div class="row" style="margin-top:10px">
+                    <div class="col-sm-12">
+                        <input style="width:85%;text-align:center" type="submit" class="fadeIn fourth" value="Login" @click="checkUser()">
+                    </div>
+                    <div class="col-sm-6">
+                        <a href="#" @click="showForgotPasswordPage()" style="color:white">Forgot your password?</a>
+                    </div>
+                    <div class="col-sm-6" style="margin-top:10px">
+                      <a v-if="isBeforeWeekOne" @click="showCreateAccountPage()" href="#" style="color:white">Create Account!</a>
+                    </div>
+                </div>
+                <p v-if="showError" style="color:red">{{errorMsg}}</p>
+            </div>
+            <div class="col-md-4"></div>
+        </div>
       </div>
+    </v-ons-modal>
+    
+    <!-- Forgot Password -->
+    <v-ons-modal :visible="forgotPasswordVisible">
+      <div class="login">
+        <img src="@/assets/ff.png" class="headerImage" style="margin-bottom:5%;width: 350px;height:350px"/>
+        <div class="row">
+            <div class="col-md-4"></div>
+            <div class="col-md-4">
+                <input type="email" v-model="user.email" class="fadeIn second" placeholder="Email" required>
+                <div class="row" style="margin-top:10px">
+                    <div class="col-sm-6">
+                        <input style="width:85%;text-align:center" type="submit" class="fadeIn fourth" value="Reset" @click="resetPassword()">
+                    </div>
+                </div>
+                <p v-if="showError" style="color:red">{{errorMsg}}</p>
+                <v-ons-button  @click="forgotPasswordVisible = false;modalVisible = true;showError =false;this.user.email = '',this.user.password=''" modifier="small" class="button-margin" style="background-color:red">Close</v-ons-button>
+            </div>
+            <div class="col-md-4"></div>
+        </div>
+      </div>
+    </v-ons-modal>
+
+    <!-- Show Create Account -->
+    <v-ons-modal :visible="createAccountVisible"  style="overflow-y: auto;overflow-x: auto;">
+      <div style="margin-top:5%" class="login">
+        <img src="@/assets/ff.png" class="headerImage" style="margin-bottom:1%;width: 350px;height:300px"/>
+        <div class="row">
+            <div class="col-md-4"></div>
+            <div class="col-md-4">
+                <input type="email" v-model="user.email" class="fadeIn second" placeholder="Enter Email" required>
+                <input type="password" v-model="user.password" class="fadeIn third" placeholder="Enter Password" required>
+                <input type="text" v-model="user.displayName" class="fadeIn fourth" placeholder="Enter Display Name" required>
+                <input type="text" v-model="user.apiKey" class="fadeIn fourth" placeholder="Enter Sports Data API Key" required>
+                <div class="row" style="margin-top:10px">
+                    <div class="col-sm-6">
+                        <input style="width:85%;text-align:center" type="submit" class="fadeIn fourth" value="Create" @click="createAccount()">
+                    </div>
+                </div>
+                <p v-if="showError" style="color:red">{{errorMsg}}</p>
+                <v-ons-button @click="createAccountVisible = false;modalVisible = true;showError =false;this.user.email = '',this.user.password=''" modifier="small" class="button-margin" style="background-color:red">Close</v-ons-button>
+            </div>
+            <div class="col-md-4"></div>
+        </div>
+      </div>
+    </v-ons-modal>
+
+  </v-ons-page>
   </div>
 </template>
 
@@ -26,32 +84,187 @@
 import firebase from 'firebase';
 import router from '@/router'
 import swal from 'sweetalert';
+import db from '@/db';
 
 export default {
   name: 'login',
   data () {
     return {
+      APIKeyBackup: 'aece277790af4bbdaec038cb6d0ad4d5',
+      APIKey: 'ea5cda3e18c544db85a09ce8a175075b',
       user: {
         email: '',
-        password: ''
-      }
+        password: '',
+        displayName: '',
+        userId: '',
+        apiKey: '',
+      },
+      isBeforeWeekOne: true,
+      modalVisible: true,
+      forgotPasswordVisible: false,
+      createAccountVisible: false,
+      showError: false,
+      errorMsg: '',
+      isValid: false,
+      currentSeason: 0
     }
   },
   methods: {
-    checkUser() {
-        firebase.auth().signInWithEmailAndPassword(this.user.email,this.user.password).then(
-          () => {
-            router.push({ path: '/' })
-          },
-          () => {
-            swal("Incorrect Credentials","Email or Password is incorrect.","error")
-            router.push({ path: '/login' })
+    // Display Login Modal
+    showForgotPasswordPage () {
+      this.modalVisible = false;
+      this.forgotPasswordVisible = true;
+      this.createAccountVisible = false
+    },
+    // Reset Password Function
+    resetPassword () {
+      let auth = firebase.auth();
+
+      auth.sendPasswordResetEmail(this.user.email).then(() => {
+        this.showError = false;
+        this.modalVisible = true;
+        this.forgotPasswordVisible = false;
+        this.createAccountVisible = false
+      }).catch((error) => {
+        this.showError = true;
+        this.errorMsg = 'Either the email doesnt exist or there is a server issue';
+      });
+    },
+    // Display Login Modal
+    showCreateAccountPage () {
+      this.user.email = '',
+      this.user.password = '',
+      this.user.displayName = '',
+      this.modalVisible = false;
+      this.forgotPasswordVisible = false;
+      this.createAccountVisible = true
+    },
+    // Create New Account
+    createAccount () {
+      let displayName = this.user.displayName;
+      let apiKey = this.user.apiKey;
+
+      // check if null , check if display name exists already/ login user hide models
+      if (this.user.email === '' || this.user.email === null || this.user.password === '' || this.user.password === null || this.user.displayName === '' || this.user.displayName === null) {
+        this.showError = true;
+        this.errorMsg = 'Fields cannot be blank.';
+      }
+      else {
+        this.showError = false;
+        fetch(`https://api.sportsdata.io/v3/cfb/scores/json/CurrentWeek?key=${this.user.apiKey}`).then((response) => {
+          if (!response.ok) {
+            throw Error(response.statusText);
+          } else {
+            this.isValid = true 
           }
-        )
-    }
+        }).catch((error)=> {
+          this.errorMsg="API Key is not valid"
+          this.showError = true;
+          this.isValid = false;
+        });
+        
+        // Check If Username already Exists Here
+        db.collection(`${this.currentSeason}_Season`).get().then(querySnapshot =>{
+          for (var i in querySnapshot.docs) {
+            const doc = querySnapshot.docs[i]
+            if(doc.data().Player === this.user.displayName) {
+              this.errorMsg="Display Name Already Exists."
+              this.showError = true;
+              this.isValid = false;
+              break;
+            }
+            else {
+              this.isValid = true
+            }
+          }
+        })
+        if(this.isValid) {
+          firebase.auth().createUserWithEmailAndPassword(this.user.email, this.user.password)
+          .then(()=> {
+            firebase.auth().signInWithEmailAndPassword(this.user.email,this.user.password)
+            .then(()=> {
+              firebase.auth().currentUser.updateProfile({
+                displayName: displayName,
+                photoURL: apiKey
+              }).then(()=> {
+                let user = firebase.auth().currentUser;
+                user.sendEmailVerification().then(() => {
+                  // Login User and hide Models
+                  
+                  this.modalVisible = false;
+                  this.forgotPasswordVisible = false;
+                  this.createAccountVisible = false;
+                  this.$store.commit('sessionUser/set', user)
+                  this.$emit('loginCompleted', true)
+                }).catch((error) => {
+                  this.showError = true;
+                  this.errorMsg = error;
+                });
+              }).catch((error) => {
+                this.showError = true;
+                this.errorMsg = error;
+              });
+            }).catch((error) => {
+              this.showError = true;
+              this.errorMsg = error;
+            })
+          })
+          .catch((error) => {
+            this.showError = true;
+            this.errorMsg = error;
+          })
+        }
+        
+      }
+      
+    },  
+    showModal() 
+    {
+      this.modalVisible = true;
+    },
+
+    // Check User Credentials On Login Button In Modal
+    checkUser() 
+    {
+
+      firebase.auth().signInWithEmailAndPassword(this.user.email, this.user.password)
+      .then((user) => {
+        this.showError = false;
+        this.modalVisible = false;
+        this.$store.commit('sessionUser/set', user)
+        this.$emit('loginCompleted', true)
+      })
+      .catch((error) => {
+        this.errorMsg = error;
+        this.showError = true;
+        this.modalVisible = true;
+      });
+
+    },
   },
-  components: {
-    //HelloWorld
+  created () {
+    let user = firebase.auth().currentUser;
+    if (user) {
+      this.$store.commit('sessionUser/set', user)
+      this.$emit('loginCompleted', true)
+      this.modalVisible = false;
+    } else {
+      // Check if before week 1, if so display sign up button
+      fetch(`https://api.sportsdata.io/v3/cfb/scores/json/CurrentWeek?key=${this.APIKey}`).then((response) => {
+        return response.text()
+      }).then((myJson) => {
+        this.isBeforeWeekOne = myJson === '' || myJson === null ? true : false
+        this.modalVisible = true;
+      })
+      fetch(`https://api.sportsdata.io/v3/cfb/scores/json/CurrentSeason?key=${this.APIKey}`).then((response) => {
+        return response.json();
+      }).then((myJson) => { 
+        // Commit Current Year To Store
+        this.currentSeason = myJson;
+      })
+    }
+    
+
   }
 }
 </script>
@@ -176,7 +389,7 @@ input[type=button]:active, input[type=submit]:active, input[type=reset]:active  
   transform: scale(0.95);
 }
 
-input[type=email], input[type=password] {
+input[type=email], input[type=password],input[type=text] {
   background-color: #f6f6f6;
   border: none;
   color: #0d0d0d;
